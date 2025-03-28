@@ -3,6 +3,7 @@ from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
+from schemas import PropertySchema, PropertyUpdateSchema
 from db import properties
 
 
@@ -11,23 +12,24 @@ blp = Blueprint("properties", __name__, description="Operations on properties")
 @blp.route("/properties")
 class PropertyList(MethodView):
     # Endpoint: GET all properties
+    @blp.response(200, PropertySchema(many=True))
     def get(self):
-        return {"properties": list(properties.items())}
+        return list(properties.values())
     
     # Endpoint: POST (create) a new property
-    def post(self):
-        property_data = request.get_json()
-        if "name" not in property_data:
-            abort(400, message="Bad request. Ensure 'name' is included in the JSON payload.")
+    @blp.arguments(PropertySchema)
+    @blp.response(201, PropertySchema)
+    def post(self, property_data):        
         property_id = uuid.uuid4().hex
         property = {**property_data, "id": property_id}
         properties[property_id] = property
-        return property, 201
+        return property
 
 
 @blp.route("/properties/<string:property_id>")
 class Property(MethodView):
     # Endpoint: GET a specific property
+    @blp.response(200, PropertySchema)
     def get(self, property_id):
         try:
             return properties[property_id]
@@ -35,8 +37,9 @@ class Property(MethodView):
             abort(404, message="Property not found")
 
     # Endpoint: PUT (update) a property
-    def put(self, property_id):
-        property_data = request.get_json()
+    @blp.arguments(PropertyUpdateSchema)
+    @blp.response(200, PropertySchema)
+    def put(self, property_data, property_id):        
         try:
             property = properties[property_id]
         except KeyError:
@@ -46,7 +49,7 @@ class Property(MethodView):
         for key in ["name", "description", "property_type", "city", "rooms", "owner_id"]:
             if key in property_data:
                 property[key] = property_data[key]
-        return property, 200
+        return property
 
 
 @blp.route("/properties/filter")

@@ -1,19 +1,21 @@
 
+from datetime import date
+
 users = {
     'f1a2b3': {
         'first_name': 'Jodie Laura', 
         'last_name': 'Dupont', 
-        'birthdate': '1990-05-12'
+        'birthdate': date(1990, 5, 12)
         }, 
         'a4b5c6': {
             'first_name': 'Kirsten', 
             'last_name': 'Doe', 
-            'birthdate': '1985-08-30'
+            'birthdate': date(1979, 7, 11)
         }, 
         'x7y8z9': {
             'first_name': 'Elliot', 
             'last_name': 'Smith', 
-            'birthdate': '1972-11-22'
+            'birthdate': date(1953, 9, 20)
         }
     }
 

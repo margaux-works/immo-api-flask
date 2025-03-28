@@ -32,9 +32,9 @@ class UserSchema(Schema):
     id = fields.Str(dump_only=True)
     first_name = fields.Str(required=True)
     last_name = fields.Str(required=True)
-    birthdate = fields.Str(required=True)  
+    birthdate = fields.Date(required=True)  
 
 class UserUpdateSchema(Schema):
     first_name = fields.Str()
     last_name = fields.Str()
-    birthdate = fields.Str()
+    birthdate = fields.Date()
