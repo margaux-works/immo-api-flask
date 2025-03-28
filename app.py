@@ -39,7 +39,28 @@ properties = [
     }
 ]
 
-## PROPERTIES ENDPOINTS
+users = [
+    {
+        "id": 1,
+        "first_name": "Jodie",
+        "last_name": "Dupont",
+        "birthdate": "1990-05-12"
+    },
+    {
+        "id": 2,
+        "first_name": "Kirsten",
+        "last_name": "Doe",
+        "birthdate": "1985-08-30"
+    },
+    {
+        "id": 3,
+        "first_name": "Elliot",
+        "last_name": "Smith",
+        "birthdate": "1972-11-22"
+    }
+]
+
+## PROPERTY ENDPOINTS
 # Endpoint 1: GET all properties
 @app.get("/properties")
 def get_all_properties():
@@ -95,3 +116,36 @@ def update_property(name):
             return property, 200
         
     return {"message": "property not found"}, 404
+
+
+## USER ENDPOINTS
+# Endpoint 1: GET all users
+@app.get("/users")
+def get_all_users():
+    return {"users": users}
+
+# Endpoint 2: GET a single user
+@app.get("/users/<int:id>")
+def get_single_user(id):
+    for user in users:
+        if user["id"] == id:
+            return user
+    return {"message": f"no user found with id {id}"}, 404
+
+# Endpoint 3: PUT (update) user data
+@app.put("/users/<int:id>")
+def update_user(id):
+    request_data = request.get_json()
+
+    for user in users:
+        if user["id"] == id:
+            #update each field only if provided
+            if "first_name" in request_data:
+                user["first_name"] = request_data["first_name"]
+            if "last_name" in request_data:
+                user["last_name"] = request_data["last_name"]
+            if "birthdate" in request_data:
+                user["birthdate"] = request_data["birthdate"]
+            return user, 200
+        
+    return {"message": "user not found"}, 404
