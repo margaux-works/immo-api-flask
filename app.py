@@ -1,151 +1,99 @@
+import uuid
 from flask import Flask, request
+from flask_smorest import Api, abort
+from db import properties, users
 
 app = Flask(__name__)
 
-## STATIC DATA
-properties = [
-    {
-        "name": "Loft Parisien",
-        "description": "Appartement lumineux dans le Marais",
-        "property_type": "Appartement",
-        "city": "Paris",
-        "rooms": [
-            {"name": "Salon", "size": 20},
-            {"name": "Chambre", "size": 15}
-        ],
-        "owner_id": 1
-    },
-    {
-        "name": "Maison Bord de Mer",
-        "description": "Maison avec vue sur la mer à Marseille",
-        "property_type": "Maison",
-        "city": "Marseille",
-        "rooms": [
-            {"name": "Salon", "size": 30},
-            {"name": "Cuisine", "size": 10},
-            {"name": "Chambre", "size": 25}
-        ],
-        "owner_id": 2
-    },
-    {
-        "name": "Studio Central",
-        "description": "Studio confortable au centre de Lyon",
-        "property_type": "Studio",
-        "city": "Lyon",
-        "rooms": [
-            {"name": "Pièce principale", "size": 18}
-        ],
-        "owner_id": 3
-    }
-]
+app.config["PROPAGATE_EXCEPTIONS"] = True
+app.config["API_TITLE"] = "Immo REST API"
+app.config["API_VERSION"] = "v1"
+app.config["OPENAPI_VERSION"] = "3.0.3"
+app.config["OPENAPI_URL_PREFIX"] = "/"
+app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
+app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
 
-users = [
-    {
-        "id": 1,
-        "first_name": "Jodie",
-        "last_name": "Dupont",
-        "birthdate": "1990-05-12"
-    },
-    {
-        "id": 2,
-        "first_name": "Kirsten",
-        "last_name": "Doe",
-        "birthdate": "1985-08-30"
-    },
-    {
-        "id": 3,
-        "first_name": "Elliot",
-        "last_name": "Smith",
-        "birthdate": "1972-11-22"
-    }
-]
+api = Api(app)
 
 ## PROPERTY ENDPOINTS
 # Endpoint 1: GET all properties
 @app.get("/properties")
 def get_all_properties():
-    return {"properties": properties}
+    return {"properties": list(properties.items())}
 
 #Endpoint 2: GET a specific property
-@app.get("/properties/<string:name>")
-def get_property(name):
-    for property in properties:
-        if property["name"] == name:
-            return property
-    return {"message": "property not found"}, 404
+@app.get("/properties/<string:property_id>")
+def get_property(property_id):
+    try:
+        return properties[property_id]
+    except KeyError:
+        print(abort.__module__)
+        abort(404, message="Property not found")
 
 # Endpoint 3: GET (filter) a property by city
 @app.get("/properties/filter")
-def filter_property():
+def filter_property_by_city():
     city = request.args.get("city")
-    filtered = [ prop for prop in properties if prop["city"].lower() == city.lower()]
-    if filtered:
-        return {"properties": filtered}, 201
-    else:
-        return {"message": f"no property found in {city}"}, 404
+    if not city:
+        abort(400, message="Missing city in query parameter")
+    filtered = [prop for prop in properties.values() if prop["city"].lower() == city.lower()]
+    if not filtered:
+        abort(404, message=f"No property currently in {city}")
+    return {"Properties" : filtered}
 
 # Endpoint 4: POST (create) a new property
 @app.post("/properties")
 def add_property():
-    request_data = request.get_json()
-    new_property = {"name": request_data["name"], "description": request_data["description"], "property_type": request_data["property_type"], "city": request_data["city"], "rooms": request_data["rooms"], "owner_id": request_data["owner_id"]}
-    properties.append(new_property)
-    return new_property, 201
+    property_data = request.get_json()
+
+    if "name" not in property_data:
+        abort(
+            400,
+            message="Bad request. Ensure 'name' is included in the JSON payload.",
+        )
+    property_id = uuid.uuid4().hex
+    property = {**property_data, "id": property_id}
+    properties[property_id] = property
+    return property, 201
 
 #Endpoint 5: PUT (update) a property
-@app.put("/properties/<string:name>")
-def update_property(name):
-    request_data = request.get_json()
+@app.put("/properties/<string:property_id>")
+def update_property(property_id):
+    property_data = request.get_json()
+    try:
+        property = properties[property_id]
+    except KeyError:
+        abort(404, message="Property not found")
 
-    for property in properties:
-        if property["name"] == name:
-            #update each field only if provided
-            if "name" in request_data:
-                property["name"] = request_data["name"]
-            if "description" in request_data:
-                property["description"] = request_data["description"]
-            if "property_type" in request_data:
-                property["property_type"] = request_data["property_type"]
-            if "city" in request_data:
-                property["city"] = request_data["city"]
-            if "owner_id" in request_data:
-                property["owner_id"] = request_data["owner_id"]
-            if "rooms" in request_data:
-                property["rooms"] = request_data["rooms"]
-
-            return property, 200
+    # Update only provided fields
+    for key in ["name", "description", "property_type", "city", "rooms", "owner_id"]:
+        if key in property_data:
+            property[key] = property_data[key]
+    return property, 200
         
-    return {"message": "property not found"}, 404
-
 
 ## USER ENDPOINTS
 # Endpoint 1: GET all users
 @app.get("/users")
 def get_all_users():
-    return {"users": users}
+    return {"users": list(users.items())}
 
 # Endpoint 2: GET a single user
-@app.get("/users/<int:id>")
+@app.get("/users/<string:id>")
 def get_single_user(id):
-    for user in users:
-        if user["id"] == id:
-            return user
-    return {"message": f"no user found with id {id}"}, 404
+    try:
+        return users[id]
+    except KeyError:
+        abort(404, message="User not found")
 
 # Endpoint 3: PUT (update) user data
-@app.put("/users/<int:id>")
+@app.put("/users/<string:id>")
 def update_user(id):
-    request_data = request.get_json()
-
-    for user in users:
-        if user["id"] == id:
-            #update each field only if provided
-            if "first_name" in request_data:
-                user["first_name"] = request_data["first_name"]
-            if "last_name" in request_data:
-                user["last_name"] = request_data["last_name"]
-            if "birthdate" in request_data:
-                user["birthdate"] = request_data["birthdate"]
-            return user, 200
-        
-    return {"message": "user not found"}, 404
+    user = users.get(id)
+    if not user:
+        abort(400, message="User not found")
+    user_data = request.get_json()
+    for key in ["first_name", "last_name", "birthdate"]:
+        if key in user_data:
+            user[key] = user_data[key]
+    return user, 200
