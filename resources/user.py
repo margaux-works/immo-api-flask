@@ -1,11 +1,12 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from sqlalchemy.exc import SQLAlchemyError
-
-from schemas import UserSchema, UserUpdateSchema
+from passlib.hash import pbkdf2_sha256
 
 from db import db
 from models.user import UserModel
+from schemas import UserSchema, UserUpdateSchema
+
 
 blp = Blueprint("users", __name__, description="Operations on users")
 
@@ -51,3 +52,22 @@ class User(MethodView):
         db.session.commit()
         return user
     
+@blp.route("/register")
+class UserRegister(MethodView):
+    # Endpoint: POST (create) a new user 
+    @blp.arguments(UserSchema)
+    def post(self, user_data):
+        if UserModel.query.filter(UserModel.username == user_data["username"]).first():
+            abort(409, message="A user with that username already exists.")
+
+        user = UserModel(
+            username=user_data["username"],
+            password=pbkdf2_sha256.hash(user_data["password"]),
+            first_name=user_data.get("first_name"),
+            last_name=user_data.get("last_name"),
+            birthdate=user_data.get("birthdate")
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        return {"message": "User created successfully."}, 201
