@@ -1,15 +1,17 @@
 
 import os 
+from dotenv import load_dotenv
 
 from flask import Flask
 from flask_smorest import Api
+from flask_jwt_extended import JWTManager
 
 from db import db
 
-import models
-
 from resources.property import blp as PropertyBlueprint
 from resources.user import blp as UserBlueprint
+
+load_dotenv()
 
 def create_app(db_url=None):
     app = Flask(__name__)
@@ -28,8 +30,15 @@ def create_app(db_url=None):
 
     api = Api(app)
 
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+    jwt = JWTManager(app)
+
+
+
     with app.app_context():
+        import models
         db.create_all()
+        
 
     api.register_blueprint(PropertyBlueprint)
     api.register_blueprint(UserBlueprint)
