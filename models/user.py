@@ -8,6 +8,6 @@ class UserModel(db.Model):
     last_name = db.Column(db.String(80), nullable=False)
     birthdate = db.Column(db.DateTime, nullable=False)
 
-    properties = db.relationship("PropertyModel", backref="owner", lazy="dynamic")
+    properties = db.relationship("PropertyModel", back_populates="user", lazy="dynamic")
 
     

@@ -12,5 +12,7 @@ class PropertyModel(db.Model):
     rooms = db.Column(sqlalchemy.JSON, nullable=False)
     owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
+    user = db.relationship("UserModel", back_populates="properties")
+
 
 
