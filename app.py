@@ -2,10 +2,10 @@
 import os 
 from dotenv import load_dotenv
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_smorest import Api
 from flask_jwt_extended import JWTManager
-from flask import Flask, jsonify
+
 
 from db import db
 
@@ -65,7 +65,6 @@ def create_app(db_url=None):
 
 
     with app.app_context():
-        import models
         db.create_all()
         
 
