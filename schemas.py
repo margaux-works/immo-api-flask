@@ -25,7 +25,10 @@ class PlainPropertySchema(Schema):
     city = fields.Str(required=True)
     rooms = fields.List(fields.Nested(RoomSchema()), required=True)
 
-
+class UserLoginSchema(Schema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
+    
 # Schemas with nested relationships
 class PropertySchema(PlainPropertySchema):
     owner_id = fields.Int(required=True, load_only=True)

@@ -3,10 +3,12 @@ from flask_smorest import Blueprint, abort
 from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import create_access_token
 from passlib.hash import pbkdf2_sha256
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 from db import db
 from models.user import UserModel
-from schemas import UserSchema, UserUpdateSchema
+from schemas import UserSchema, UserUpdateSchema, UserLoginSchema
 
 
 blp = Blueprint("users", __name__, description="Operations on users")
@@ -17,20 +19,9 @@ class UserList(MethodView):
     @blp.response(200, UserSchema(many=True))
     def get(self):
         return UserModel.query.all()
-    
-    # Endpoint: POST (create) a new user
-    @blp.arguments(UserSchema)
-    @blp.response(201, UserSchema)
-    def post(self, user_data):
-        user = UserModel(**user_data)
-        try:
-            db.session.add(user)
-            db.session.commit()
-        except SQLAlchemyError:
-            abort(500, message="An error occurred while creating the user.")
-        return user
 
-@blp.route("/users/<string:user_id>")
+
+@blp.route("/users/<int:user_id>")
 class User(MethodView):
     # Endpoint: GET a single user
     @blp.response(200, UserSchema)
@@ -41,19 +32,22 @@ class User(MethodView):
     # Endpoint: PUT (update) user data
     @blp.arguments(UserUpdateSchema)
     @blp.response(200, UserSchema)
+    @jwt_required()
     def put(self, user_data, user_id):
-        user = UserModel.query.get(user_id)
+        user = UserModel.query.get_or_404(user_id)
 
-        if not user:
-            abort(404, message="User not found.")
+        current_user_id = get_jwt_identity()
 
+        if int(current_user_id) != user_id:
+            abort(403, message="You can only update your own user data.")
+                  
         for key, value in user_data.items():
             setattr(user, key, value)
 
         db.session.commit()
         return user
 
- # User Authentication - Register & Login
+# User Authentication - Register & Login
     
 @blp.route("/register")
 class UserRegister(MethodView):
@@ -77,7 +71,8 @@ class UserRegister(MethodView):
     
 @blp.route("/login")
 class UserLogin(MethodView):
-    @blp.arguments(UserSchema)
+    # Endpoint: POST Login as an existing user
+    @blp.arguments(UserLoginSchema)
     def post(self, user_data):
         user = UserModel.query.filter(
             UserModel.username == user_data["username"]

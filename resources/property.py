@@ -2,6 +2,9 @@ from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+
 
 from schemas import PropertySchema, PropertyUpdateSchema
 
@@ -47,11 +50,16 @@ class Property(MethodView):
     # Endpoint: PUT (update) a property
     @blp.arguments(PropertyUpdateSchema)
     @blp.response(200, PropertySchema)
+    @jwt_required()
     def put(self, property_data, property_id):
+        user_id = get_jwt_identity() 
         property = PropertyModel.query.get(property_id)
 
         if not property:
             abort(404, message="Property not found.")
+
+        if property.owner_id != int(user_id):
+            abort(403, message="You can only update your own properties.")
 
         for key, value in property_data.items():
             setattr(property, key, value)
