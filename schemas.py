@@ -39,8 +39,7 @@ class UserSchema(PlainUserSchema):
     properties = fields.List(fields.Nested(PlainPropertySchema()), dump_only=True)
 
 
-
-# Update schemas
+# Update schemas with optional fields
 class PropertyUpdateSchema(Schema):
     name = fields.Str()
     description = fields.Str()

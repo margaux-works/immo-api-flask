@@ -34,6 +34,7 @@ def create_app(db_url=None):
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
     jwt = JWTManager(app)
 
+    # adjusts the response when JWT has expired or is wrong or missing
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return (

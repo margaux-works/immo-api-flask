@@ -35,8 +35,10 @@ class User(MethodView):
     def put(self, user_data, user_id):
         user = UserModel.query.get_or_404(user_id)
 
+        # get ID of currently logged-in user with JWT token
         current_user_id = get_jwt_identity()
 
+        # prevents user from editing another user's data
         if int(current_user_id) != user_id:
             abort(403, message="You can only update your own user data.")
                   
@@ -50,15 +52,16 @@ class User(MethodView):
     
 @blp.route("/register")
 class UserRegister(MethodView):
-    # Endpoint: POST (create) a new user 
+    # Endpoint: POST (create/register) a new user 
     @blp.arguments(UserSchema)
     def post(self, user_data):
+        # check if username already exists to prevent duplicates
         if UserModel.query.filter(UserModel.username == user_data["username"]).first():
             abort(409, message="A user with that username already exists.")
 
         user = UserModel(
             username=user_data["username"],
-            password=pbkdf2_sha256.hash(user_data["password"]),
+            password=pbkdf2_sha256.hash(user_data["password"]), # hash user's password
             first_name=user_data.get("first_name"),
             last_name=user_data.get("last_name"),
             birthdate=user_data.get("birthdate")

@@ -52,12 +52,14 @@ class Property(MethodView):
     @blp.response(200, PropertySchema)
     @jwt_required()
     def put(self, property_data, property_id):
+        # get ID of currently logged-in user with JWT token
         user_id = get_jwt_identity() 
         property = PropertyModel.query.get(property_id)
 
         if not property:
             abort(404, message="Property not found.")
 
+        # checks that only owner can update the property
         if property.owner_id != int(user_id):
             abort(403, message="You can only update your own properties.")
 
