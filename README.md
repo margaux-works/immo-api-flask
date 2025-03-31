@@ -61,7 +61,7 @@ cp .env.example .env
 Le fichier `.env` doit contenir :
 
 ```env
-JWT_SECRET_KEY=your-super-secret-key
+JWT_SECRET_KEY=your-secret-key
 DATABASE_URL=sqlite:///data.db
 ```
 
@@ -100,7 +100,7 @@ Authorization: Bearer <your_token_here>
 
 ---
 
-## Postman Collection (Optional)
+## Postman Collection
 
 Vous pouvez importer le fichier `postman_collection.json` inclus dans le repo pour tester les endpoints manuellement.
 
